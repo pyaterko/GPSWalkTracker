@@ -1,4 +1,4 @@
-package com.example.gpswalktracker.ui.notifications
+package com.example.gpswalktracker.ui.settings
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.gpswalktracker.databinding.FragmentSettingsBinding
+import com.example.gpswalktracker.ui.home.HomeFragment
 
 class SettingsFragment : Fragment() {
 
@@ -20,14 +21,14 @@ class SettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        val notificationsViewModel =
-            ViewModelProvider(this)[NotificationsViewModel::class.java]
+        val settingsViewModel =
+            ViewModelProvider(this)[SettingsViewModel::class.java]
 
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         val textView: TextView = binding.textNotifications
-        notificationsViewModel.text.observe(viewLifecycleOwner) {
+        settingsViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }
         return root
@@ -36,5 +37,9 @@ class SettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+    companion object {
+        @JvmStatic
+        fun newInstance() = SettingsFragment()
     }
 }
