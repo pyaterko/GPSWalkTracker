@@ -1,35 +1,55 @@
 package com.example.gpswalktracker
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
 import com.example.gpswalktracker.databinding.ActivityMainBinding
+import com.example.gpswalktracker.ui.dashboard.DashboardFragment
+import com.example.gpswalktracker.ui.home.HomeFragment
+import com.example.gpswalktracker.ui.notifications.SettingsFragment
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    private val binding: ActivityMainBinding by lazy {
+        ActivityMainBinding.inflate(layoutInflater)
+    }
 
+    @SuppressLint("CommitTransaction")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val navView: BottomNavigationView = binding.navView
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.nav_host_fragment_activity_main,HomeFragment())
+            .commit()
 
-        val navController = findNavController(R.id.nav_host_fragment_activity_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications
-            )
-        )
-        setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)
+        binding.navView.setOnItemSelectedListener {
+            when(it.itemId){
+                R.id.navigation_home->{
+                    supportFragmentManager
+                        .beginTransaction()
+                        .replace(R.id.nav_host_fragment_activity_main,HomeFragment())
+                        .commit()
+                }
+                R.id.list_trackers->{
+                    supportFragmentManager
+                        .beginTransaction()
+                        .addToBackStack(null)
+                        .replace(R.id.nav_host_fragment_activity_main,DashboardFragment())
+                        .commit()
+                }
+                R.id.settings->{
+                    supportFragmentManager
+                        .beginTransaction()
+                        .addToBackStack(null)
+                        .replace(R.id.nav_host_fragment_activity_main,SettingsFragment())
+                        .commit()
+                }
+            }
+            return@setOnItemSelectedListener true
+        }
+
+
     }
 }
