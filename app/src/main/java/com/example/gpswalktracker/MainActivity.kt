@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
                     launchFragment(ListTrackersFragment.newInstance())
                 }
                 R.id.settings -> {
-                    launchFragment(SettingsFragment.newInstance())
+                    launchFragment(SettingsFragment())
                 }
             }
             return@setOnItemSelectedListener true

@@ -1,6 +1,19 @@
 <resources>
     <string name="app_name">GPS Walk Tracker</string>
+
+    //Navigation
     <string name="title_home">Home</string>
     <string name="list_trackers">List trackers</string>
     <string name="title_settings">Settings</string>
+
+    //Preference
+    <string name="update_time">Update time</string>
+    <string name="update_time_key">update_time_key</string>
+    <string name="update_time_summary">Location update time</string>
+    <string name="location_title">Location</string>
+    <string name="default_time">3000</string>
+    <string name="track_color">Track color</string>
+    <string name="track_color_key">track_color_key</string>
+    <string name="track_color_summary">Choose track color</string>
+    <string name="default_color">#FF000000</string>
 </resources>
