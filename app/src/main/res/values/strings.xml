@@ -16,4 +16,7 @@
     <string name="track_color_key">track_color_key</string>
     <string name="track_color_summary">Choose track color</string>
     <string name="default_color">#FF000000</string>
+    <string name="osm_pref_key">osm_pref_key</string>
+    <string name="location_ermission_eeded">Location Permission Needed</string>
+    <string name="this_app_needs_the_Location_permission">This app needs the Location permission, please accept to use location functionality</string>
 </resources>

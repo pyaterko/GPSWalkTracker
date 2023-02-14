@@ -8,6 +8,7 @@ import com.example.gpswalktracker.ui.home.HomeFragment
 import com.example.gpswalktracker.ui.list_trackers.ListTrackersFragment
 import com.example.gpswalktracker.ui.settings.SettingsFragment
 import com.example.gpswalktracker.ui.utils.launchFragment
+import com.google.android.gms.location.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("CommitTransaction")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(binding.root)
         if (savedInstanceState == null) {
             launchFragment(HomeFragment.newInstance())
@@ -37,7 +39,6 @@ class MainActivity : AppCompatActivity() {
             }
             return@setOnItemSelectedListener true
         }
-
-
     }
+
 }
