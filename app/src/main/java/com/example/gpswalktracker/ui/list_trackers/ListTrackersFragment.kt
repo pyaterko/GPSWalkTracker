@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.gpswalktracker.databinding.FragmentListtrackersBinding
-import com.example.gpswalktracker.ui.home.HomeFragment
 
 class ListTrackersFragment : Fragment() {
 

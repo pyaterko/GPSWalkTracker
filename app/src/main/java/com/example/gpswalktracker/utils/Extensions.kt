@@ -1,4 +1,4 @@
-package com.example.gpswalktracker.ui.utils
+package com.example.gpswalktracker.utils
 
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity

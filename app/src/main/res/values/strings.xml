@@ -19,4 +19,16 @@
     <string name="osm_pref_key">osm_pref_key</string>
     <string name="location_ermission_eeded">Location Permission Needed</string>
     <string name="this_app_needs_the_Location_permission">This app needs the Location permission, please accept to use location functionality</string>
+    <string name="ok">OK</string>
+    <string name="no">NO</string>
+    <string name="is_gps_enabled">Do you want gps enabled</string>
+    <string name="gps_disabled">GPS disabled</string>
+    <string name="content_description">content description</string>
+    <string name="tv_time">Time 00:00:00</string>
+    <string name="tv_average_speed">average speed 7 km//h</string>
+    <string name="tv_speed">speed 3 km//h</string>
+    <string name="tv_distanse">distanse 15 km</string>
+    <string name="notification_permission">Notification Permission</string>
+    <string name="notification_permission_is_required">Notification permission is required, Please allow notification permission from setting</string>
+    <string name="notification_permission_granted">notification permission granted</string>
 </resources>
