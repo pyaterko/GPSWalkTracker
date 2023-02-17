@@ -3,11 +3,11 @@ package com.example.gpswalktracker.ui.home
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.gpswalktracker.location.LocationModel
 
 class MapViewModel : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is home Fragment"
-    }
-    val text: LiveData<String> = _text
+    val locationUpdates = MutableLiveData<LocationModel>()
+
+
 }

@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
@@ -22,7 +23,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.gpswalktracker.MainActivity
 import com.example.gpswalktracker.R
@@ -30,22 +31,30 @@ import com.example.gpswalktracker.databinding.FragmentMapBinding
 import com.example.gpswalktracker.location.LocationModel
 import com.example.gpswalktracker.location.LocationService
 import com.example.gpswalktracker.utils.DialogManager
-import com.example.gpswalktracker.utils.OSMap
 import com.example.gpswalktracker.utils.TimeUtils
 import com.example.gpswalktracker.utils.checkPermission
 import com.google.android.gms.location.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.osmdroid.config.Configuration
+import org.osmdroid.library.BuildConfig
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
 class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
+    private val mapViewModel: MapViewModel by activityViewModels()
     private lateinit var pLauncher: ActivityResultLauncher<Array<String>>
     private var hasNotificationPermissionGranted = false
     private var isServiceRunning = false
+    private var firstStart = true
     private var timer: Timer? = null
     private var startTime = 0L
+    private var polyLine: Polyline? = null
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(contex: Context?, intent: Intent?) {
             if (intent?.action == LocationService.LOC_MODEL_INTENT) {
@@ -58,7 +67,7 @@ class MapFragment : Fragment() {
                     } else {
                         intent.getParcelableExtra(LocationService.LOC_MODEL_INTENT)
                     }
-
+                mapViewModel.locationUpdates.value = locModel
             }
         }
 
@@ -119,17 +128,20 @@ class MapFragment : Fragment() {
             .show()
     }
 
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        val mapViewModel =
-            ViewModelProvider(this)[MapViewModel::class.java]
-        OSMap.settingsMap(requireContext(), (activity as MainActivity))
+        settingsMap()
         LocalBroadcastManager
             .getInstance(activity as AppCompatActivity)
             .registerReceiver(receiver, IntentFilter(LocationService.LOC_MODEL_INTENT))
+        mapViewModel.locationUpdates.observe(viewLifecycleOwner) {
+            setData(it)
+            updatePolyline(it.geoPointsList)
+        }
         _binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -154,6 +166,35 @@ class MapFragment : Fragment() {
             }
             isServiceRunning = !isServiceRunning
         }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setData(locationModel: LocationModel) {
+        binding.tvDistance.text =
+            "${getString(R.string.distanse)} ${
+                String.format(
+                    "%.1f",
+                    locationModel.distance
+                )
+            } ${getString(R.string._m)}"
+        binding.tvSpeed.text =
+            "${getString(R.string.speed)} ${
+                String.format(
+                    "%.1f",
+                    3.6f * locationModel.speed
+                )
+            } ${getString(R.string.km_h)}"
+        binding.tvAverageSpeed.text =
+            "${getString(R.string.average_speed)} ${
+                getAverageSpeed(locationModel.distance)
+            } ${getString(R.string.km_h)}"
+    }
+
+    private fun getAverageSpeed(distance: Float): String {
+        return String.format(
+            "%.1f",
+            3.6f * (distance / ((System.currentTimeMillis() - startTime) / 1000f))
+        )
     }
 
     private fun startTimer() {
@@ -207,7 +248,7 @@ class MapFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            OSMap.initOSM(requireContext(), binding)
+            initOSM()
 
         }
     }
@@ -269,7 +310,7 @@ class MapFragment : Fragment() {
             ActivityResultContracts.RequestMultiplePermissions()
         ) {
             if (it.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
-                OSMap.initOSM(requireContext(), binding)
+                initOSM()
                 checkEnabledGPS()
             } else {
                 checkLocationPermission()
@@ -288,7 +329,7 @@ class MapFragment : Fragment() {
 
     private fun checkPermissionBeforeQ() {
         if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            OSMap.initOSM(requireContext(), binding)
+            initOSM()
             checkEnabledGPS()
         } else {
             pLauncher.launch(
@@ -304,7 +345,7 @@ class MapFragment : Fragment() {
         if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
             checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         ) {
-            OSMap.initOSM(requireContext(), binding)
+            initOSM()
             checkEnabledGPS()
         } else {
             pLauncher.launch(
@@ -328,9 +369,59 @@ class MapFragment : Fragment() {
         }
     }
 
+    private fun initOSM(
+    ) = with(binding) {
+        polyLine = Polyline()
+        polyLine?.outlinePaint?.color = Color.BLUE
+        map.controller.setZoom(18.0)
+        val mLocProvider = GpsMyLocationProvider(requireContext())
+        val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
+        mLocOverlay.enableMyLocation()
+        mLocOverlay.enableFollowLocation()
+        mLocOverlay.runOnFirstFix {
+            map.overlays.clear()
+            map.overlays.add(mLocOverlay)
+            map.overlays.add(polyLine)
+        }
+    }
+
+    private fun settingsMap() {
+        Configuration.getInstance().load(
+            context,
+            activity?.getSharedPreferences(
+                getString(R.string.osm_pref_key),
+                Context.MODE_PRIVATE
+            )
+        )
+        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+    }
+
+    private fun addPoints(list: List<GeoPoint>) {
+        polyLine?.addPoint(list[list.size - 1])
+    }
+
+    private fun fillPointsAfterPause(list: List<GeoPoint>) {
+        list.forEach {
+            polyLine?.addPoint(it)
+        }
+
+    }
+
+    private fun updatePolyline(list: List<GeoPoint>) {
+        if (list.size > 1 && firstStart) {
+            fillPointsAfterPause(list)
+            firstStart = false
+        } else {
+            addPoints(list)
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        LocalBroadcastManager
+            .getInstance(activity as AppCompatActivity)
+            .unregisterReceiver(receiver)
     }
 
     companion object {

@@ -31,4 +31,9 @@
     <string name="notification_permission">Notification Permission</string>
     <string name="notification_permission_is_required">Notification permission is required, Please allow notification permission from setting</string>
     <string name="notification_permission_granted">notification permission granted</string>
+    <string name="distanse">Distance</string>
+    <string name="average_speed">Average Speed</string>
+    <string name="speed">Speed</string>
+    <string name="_m">m</string>
+    <string name="km_h">km//h</string>
 </resources>
