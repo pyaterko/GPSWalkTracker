@@ -10,13 +10,15 @@
     <string name="update_time">Update time</string>
     <string name="update_time_key">update_time_key</string>
     <string name="update_time_summary">Location update time</string>
-    <string name="location_title">Location</string>
-    <string name="default_time">3000</string>
     <string name="track_color">Track color</string>
     <string name="track_color_key">track_color_key</string>
     <string name="track_color_summary">Choose track color</string>
+    <string name="location_title">Location</string>
+    <string name="default_time">3000</string>
     <string name="default_color">#FF000000</string>
     <string name="osm_pref_key">osm_pref_key</string>
+
+    //Dialogs
     <string name="location_ermission_eeded">Location Permission Needed</string>
     <string name="this_app_needs_the_Location_permission">This app needs the Location permission, please accept to use location functionality</string>
     <string name="ok">OK</string>
@@ -36,4 +38,9 @@
     <string name="speed">Speed</string>
     <string name="_m">m</string>
     <string name="km_h">km//h</string>
+    <string name="save_this_treck">Save this treck</string>
+    <string name="yes">yes</string>
+    <string name="to_show_notification">Notification permission is required, to show notification</string>
+    <string name="alert">Alert</string>
+    <string name="time">Time :</string>
 </resources>

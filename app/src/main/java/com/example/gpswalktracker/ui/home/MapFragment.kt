@@ -16,7 +16,6 @@ import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -27,14 +26,14 @@ import androidx.fragment.app.activityViewModels
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.gpswalktracker.MainActivity
 import com.example.gpswalktracker.R
+import com.example.gpswalktracker.data.InfoTrackItem
 import com.example.gpswalktracker.databinding.FragmentMapBinding
 import com.example.gpswalktracker.location.LocationModel
 import com.example.gpswalktracker.location.LocationService
+import com.example.gpswalktracker.utils.DateUtils
 import com.example.gpswalktracker.utils.DialogManager
-import com.example.gpswalktracker.utils.TimeUtils
 import com.example.gpswalktracker.utils.checkPermission
 import com.google.android.gms.location.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
 import org.osmdroid.util.GeoPoint
@@ -43,8 +42,10 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.*
 
+
 class MapFragment : Fragment() {
 
+    private var locationModel: LocationModel? = null
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
     private val mapViewModel: MapViewModel by activityViewModels()
@@ -65,12 +66,12 @@ class MapFragment : Fragment() {
                             LocationModel::class.java
                         )
                     } else {
+                        @Suppress("DEPRECATION")
                         intent.getParcelableExtra(LocationService.LOC_MODEL_INTENT)
                     }
                 mapViewModel.locationUpdates.value = locModel
             }
         }
-
     }
 
 
@@ -82,52 +83,15 @@ class MapFragment : Fragment() {
                     if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
                         showNotificationPermissionRationale()
                     } else {
-                        showSettingDialog()
+                        DialogManager.showSettingDialog(requireContext()) {
+                            val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = Uri.parse((activity as MainActivity).packageName)
+                            startActivity(intent)
+                        }
                     }
                 }
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.notification_permission_granted),
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
             }
         }
-
-    private fun showSettingDialog() {
-        MaterialAlertDialogBuilder(
-            requireContext(),
-            com.google.android.material.R.style.MaterialAlertDialog_Material3
-        )
-            .setTitle(getString(R.string.notification_permission))
-            .setMessage(getString(R.string.notification_permission_is_required))
-            .setPositiveButton("Ok") { _, _ ->
-                val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS)
-                intent.data = Uri.parse((activity as MainActivity).packageName)
-                startActivity(intent)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showNotificationPermissionRationale() {
-
-        MaterialAlertDialogBuilder(
-            requireContext(),
-            com.google.android.material.R.style.MaterialAlertDialog_Material3
-        )
-            .setTitle("Alert")
-            .setMessage("Notification permission is required, to show notification")
-            .setPositiveButton("Ok") { _, _ ->
-                if (Build.VERSION.SDK_INT >= 33) {
-                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -148,7 +112,6 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         isServiceRunning = LocationService.isRunning
         if (isServiceRunning) {
             binding.fatRun.setImageResource(android.R.drawable.ic_media_pause)
@@ -163,31 +126,78 @@ class MapFragment : Fragment() {
             } else {
                 stopLocationService()
                 timer?.cancel()
+                DialogManager.showDialogForSavingTheTrack(
+                    requireContext(),
+                    getInfoTrackItem()
+                ) {
+                    //todo
+                }
             }
-            isServiceRunning = !isServiceRunning
+            if (hasNotificationPermissionGranted){
+                isServiceRunning = !isServiceRunning
+            }
+        }
+    }
+
+    private fun showNotificationPermissionRationale() {
+        DialogManager.showNotificationPermissionRationale(requireContext()) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
     @SuppressLint("SetTextI18n")
     private fun setData(locationModel: LocationModel) {
-        binding.tvDistance.text =
-            "${getString(R.string.distanse)} ${
-                String.format(
-                    "%.1f",
-                    locationModel.distance
-                )
-            } ${getString(R.string._m)}"
-        binding.tvSpeed.text =
-            "${getString(R.string.speed)} ${
-                String.format(
-                    "%.1f",
-                    3.6f * locationModel.speed
-                )
-            } ${getString(R.string.km_h)}"
+        val distance = "${getString(R.string.distanse)} ${
+            String.format(
+                "%.1f",
+                locationModel.distance
+            )
+        } ${getString(R.string._m)}"
+        val speed = "${getString(R.string.speed)} ${
+            String.format(
+                "%.1f",
+                3.6f * locationModel.speed
+            )
+        } ${getString(R.string.km_h)}"
+        this.locationModel = locationModel
+        binding.tvDistance.text = distance
+        binding.tvSpeed.text = speed
+
         binding.tvAverageSpeed.text =
             "${getString(R.string.average_speed)} ${
                 getAverageSpeed(locationModel.distance)
             } ${getString(R.string.km_h)}"
+    }
+
+    private fun getGeoPointsToString(list: List<GeoPoint>): String {
+        val stringBuilder = java.lang.StringBuilder()
+        list.forEach {
+            stringBuilder.append("${it.latitude} ${it.longitude}/")
+        }
+        return stringBuilder.toString()
+    }
+
+    private fun getInfoTrackItem(): InfoTrackItem {
+        val distance = "${getString(R.string.distanse)} ${
+            String.format(
+                "%.1f",
+                locationModel?.distance
+            )
+        } ${getString(R.string._m)}"
+        val speed = "${getString(R.string.speed)} ${
+            String.format(
+                "%.1f",
+                3.6f * (locationModel?.speed ?: 0f)
+            )
+        } ${getString(R.string.km_h)}"
+        return InfoTrackItem(
+            id = UNDEFINED_ID,
+            time = getCurrentTime(),
+            date = DateUtils.getDate(),
+            distance = distance,
+            speed = speed,
+            geoPoints = getGeoPointsToString(locationModel?.geoPointsList ?: emptyList())
+        )
     }
 
     private fun getAverageSpeed(distance: Float): String {
@@ -205,13 +215,15 @@ class MapFragment : Fragment() {
             @SuppressLint("SetTextI18n")
             override fun run() {
                 activity?.runOnUiThread {
-                    binding.tvTime.text =
-                        "Time " + TimeUtils.getTime(System.currentTimeMillis() - startTime)
+                    binding.tvTime.text = getCurrentTime()
+
                 }
             }
-
         }, 1000, 1000)
     }
+
+    private fun getCurrentTime() =
+        getString(R.string.time) + DateUtils.getTime(System.currentTimeMillis() - startTime)
 
     private fun stopLocationService() {
         binding.fatRun.setImageResource(android.R.drawable.ic_media_play)
@@ -249,7 +261,6 @@ class MapFragment : Fragment() {
         super.onResume()
         if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             initOSM()
-
         }
     }
 
@@ -404,7 +415,6 @@ class MapFragment : Fragment() {
         list.forEach {
             polyLine?.addPoint(it)
         }
-
     }
 
     private fun updatePolyline(list: List<GeoPoint>) {
@@ -422,11 +432,14 @@ class MapFragment : Fragment() {
         LocalBroadcastManager
             .getInstance(activity as AppCompatActivity)
             .unregisterReceiver(receiver)
+        locationModel = null
+        polyLine = null
     }
 
     companion object {
         private const val MY_PERMISSIONS_REQUEST_LOCATION = 99
         private const val MY_PERMISSIONS_REQUEST_BACKGROUND_LOCATION = 66
+        private const val UNDEFINED_ID = 0
 
         @JvmStatic
         fun newInstance() = MapFragment()
