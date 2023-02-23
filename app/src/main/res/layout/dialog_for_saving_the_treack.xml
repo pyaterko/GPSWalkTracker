@@ -15,13 +15,13 @@
             android:id="@+id/tv_save"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+
             android:fontFamily="@font/alfa_slab_one"
-            android:text="@string/save_this_treck"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="@string/save_this_treck" />
 
         <TextView
             android:id="@+id/tv_time"
@@ -29,13 +29,13 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/amiko_semibold"
-            android:text="@string/update_time"
             android:textColor="@color/black"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_save" />
+            app:layout_constraintTop_toBottomOf="@+id/tv_save"
+            tools:text="@string/update_time" />
 
         <TextView
             android:id="@+id/tv_speed"
@@ -43,12 +43,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/amiko_semibold"
-            android:text="@string/tv_speed"
             android:textColor="@color/black"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_time" />
+            app:layout_constraintTop_toBottomOf="@+id/tv_time"
+            tools:text="@string/tv_speed" />
 
         <TextView
             android:id="@+id/tv_dictance"
@@ -56,26 +56,28 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/alfa_slab_one"
-            android:text="@string/tv_speed"
             android:textColor="@color/black"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_speed" />
+            app:layout_constraintTop_toBottomOf="@+id/tv_speed"
+            tools:text="@string/tv_speed" />
 
         <Button
             android:id="@+id/button_no"
-            android:layout_width="wrap_content"
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="32dp"
             android:layout_marginTop="24dp"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/black"
             android:text="@string/no"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_dictance" />
 
         <Button
             android:id="@+id/button_yes"
-            android:layout_width="wrap_content"
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:layout_marginEnd="32dp"

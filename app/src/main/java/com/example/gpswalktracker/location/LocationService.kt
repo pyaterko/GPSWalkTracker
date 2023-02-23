@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.example.gpswalktracker.MainActivity
 import com.example.gpswalktracker.R
 import com.google.android.gms.location.*
@@ -19,27 +20,32 @@ import org.osmdroid.util.GeoPoint
 
 class LocationService : Service() {
 
+    private var interval = 3000L
     private var fusedLocationProvider: FusedLocationProviderClient? = null
     private var lastLocation: Location? = null
+    val geoPointList = arrayListOf<GeoPoint>()
     private var distance = 0.0f
 
+
     private val locationRequest: LocationRequest =
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 3000L)
+        LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            interval
+        )
             .setWaitForAccurateLocation(true)
-            .setMinUpdateIntervalMillis(3000L)
-            .setMaxUpdateDelayMillis(6000L)
+            .setMinUpdateIntervalMillis(interval)
+            .setMaxUpdateDelayMillis(10000L)
             .build()
 
     private var locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             super.onLocationResult(locationResult)
-            val geoPointList = ArrayList<GeoPoint>()
             val currentLocation = locationResult.lastLocation
             if (lastLocation != null && currentLocation != null) {
-                geoPointList.add(GeoPoint(currentLocation.latitude, currentLocation.longitude))
-                //       if (currentLocation.speed > 0.3) {
-                distance += lastLocation?.distanceTo(currentLocation)!!
-                //        }
+                if (currentLocation.speed > 0.3) {
+                    distance += lastLocation?.distanceTo(currentLocation)!!
+                    geoPointList.add(GeoPoint(currentLocation.latitude, currentLocation.longitude))
+                }
                 val locationModel = LocationModel(
                     speed = currentLocation.speed,
                     distance = distance,
@@ -72,6 +78,8 @@ class LocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        interval = PreferenceManager.getDefaultSharedPreferences(this)
+            .getString(getString(R.string.update_time_key), "3000")?.toLong() ?: 3000L
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(baseContext)
     }
 

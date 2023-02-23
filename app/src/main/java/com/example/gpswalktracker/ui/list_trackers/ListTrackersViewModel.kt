@@ -1,13 +1,17 @@
 package com.example.gpswalktracker.ui.list_trackers
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import com.example.gpswalktracker.data.InfoTrackItem
+import com.example.gpswalktracker.data.TracksDataBase
+import kotlinx.coroutines.launch
 
-class ListTrackersViewModel : ViewModel() {
+class ListTrackersViewModel(dataBase: TracksDataBase) : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is dashboard Fragment"
+    val trackDao = dataBase.trackDao()
+    val listData = trackDao.getList().asLiveData()
+    fun deleteInfoTrack(infoTrackItem: InfoTrackItem) = viewModelScope.launch {
+        trackDao.deleteItem(infoTrackItem.id)
     }
-    val text: LiveData<String> = _text
 }

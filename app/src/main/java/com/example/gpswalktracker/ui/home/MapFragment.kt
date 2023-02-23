@@ -22,20 +22,16 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.example.gpswalktracker.MainActivity
 import com.example.gpswalktracker.R
 import com.example.gpswalktracker.data.InfoTrackItem
 import com.example.gpswalktracker.databinding.FragmentMapBinding
 import com.example.gpswalktracker.location.LocationModel
 import com.example.gpswalktracker.location.LocationService
-import com.example.gpswalktracker.utils.DateUtils
-import com.example.gpswalktracker.utils.DialogManager
-import com.example.gpswalktracker.utils.checkPermission
+import com.example.gpswalktracker.utils.*
 import com.google.android.gms.location.*
-import org.osmdroid.config.Configuration
-import org.osmdroid.library.BuildConfig
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
@@ -45,17 +41,19 @@ import java.util.*
 
 class MapFragment : Fragment() {
 
-    private var locationModel: LocationModel? = null
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
-    private val mapViewModel: MapViewModel by activityViewModels()
+    private val mapViewModel: MapViewModel by viewModelCreator { MapViewModel(it.dataBase) }
+
     private lateinit var pLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var mLocOverlay: MyLocationNewOverlay
+    private var locationModel: LocationModel? = null
+    private var timer: Timer? = null
+    private var polyLine: Polyline? = null
     private var hasNotificationPermissionGranted = false
     private var isServiceRunning = false
     private var firstStart = true
-    private var timer: Timer? = null
     private var startTime = 0L
-    private var polyLine: Polyline? = null
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(contex: Context?, intent: Intent?) {
             if (intent?.action == LocationService.LOC_MODEL_INTENT) {
@@ -126,17 +124,40 @@ class MapFragment : Fragment() {
             } else {
                 stopLocationService()
                 timer?.cancel()
+                val trackItem = getInfoTrackItem()
                 DialogManager.showDialogForSavingTheTrack(
                     requireContext(),
-                    getInfoTrackItem()
+                    trackItem
                 ) {
-                    //todo
+                    mapViewModel.addInfoTrack(trackItem)
                 }
             }
-            if (hasNotificationPermissionGranted){
-                isServiceRunning = !isServiceRunning
-            }
+//            if (hasNotificationPermissionGranted) {
+            isServiceRunning = !isServiceRunning
+//            }
         }
+        binding.fatLocation.setOnClickListener {
+            binding.map.controller.animateTo(mLocOverlay.myLocation)
+            mLocOverlay.enableFollowLocation()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        firstStart = true
+        if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            initOSM()
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        LocalBroadcastManager
+            .getInstance(activity as AppCompatActivity)
+            .unregisterReceiver(receiver)
+        locationModel = null
+        polyLine = null
     }
 
     private fun showNotificationPermissionRationale() {
@@ -254,13 +275,6 @@ class MapFragment : Fragment() {
                     )
                 )
             }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            initOSM()
         }
     }
 
@@ -383,32 +397,26 @@ class MapFragment : Fragment() {
     private fun initOSM(
     ) = with(binding) {
         polyLine = Polyline()
-        polyLine?.outlinePaint?.color = Color.BLUE
+        polyLine?.outlinePaint?.color = Color.parseColor(
+            PreferenceManager.getDefaultSharedPreferences(requireContext())
+                .getString(getString(R.string.track_color_key), getString(R.string.default_color))
+        )
         map.controller.setZoom(18.0)
         val mLocProvider = GpsMyLocationProvider(requireContext())
-        val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
+        mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
         mLocOverlay.enableMyLocation()
         mLocOverlay.enableFollowLocation()
         mLocOverlay.runOnFirstFix {
             map.overlays.clear()
-            map.overlays.add(mLocOverlay)
             map.overlays.add(polyLine)
+            map.overlays.add(mLocOverlay)
         }
     }
 
-    private fun settingsMap() {
-        Configuration.getInstance().load(
-            context,
-            activity?.getSharedPreferences(
-                getString(R.string.osm_pref_key),
-                Context.MODE_PRIVATE
-            )
-        )
-        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-    }
-
     private fun addPoints(list: List<GeoPoint>) {
-        polyLine?.addPoint(list[list.size - 1])
+        if (list.isNotEmpty()) {
+            polyLine?.addPoint(list[list.size - 1])
+        }
     }
 
     private fun fillPointsAfterPause(list: List<GeoPoint>) {
@@ -424,16 +432,6 @@ class MapFragment : Fragment() {
         } else {
             addPoints(list)
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-        LocalBroadcastManager
-            .getInstance(activity as AppCompatActivity)
-            .unregisterReceiver(receiver)
-        locationModel = null
-        polyLine = null
     }
 
     companion object {

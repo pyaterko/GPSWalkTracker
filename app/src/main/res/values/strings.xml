@@ -43,4 +43,5 @@
     <string name="to_show_notification">Notification permission is required, to show notification</string>
     <string name="alert">Alert</string>
     <string name="time">Time :</string>
+    <string name="date">3/12/23</string>
 </resources>
