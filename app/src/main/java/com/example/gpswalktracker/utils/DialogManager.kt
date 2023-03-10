@@ -15,23 +15,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 object DialogManager {
 
-    fun showSettingDialog(
-        context: Context,
-        onClickPositiveButton: () -> Unit,
-    ) {
-        MaterialAlertDialogBuilder(
-            context,
-            com.google.android.material.R.style.MaterialAlertDialog_Material3
-        )
-            .setTitle(context.getString(R.string.notification_permission))
-            .setMessage(context.getString(R.string.notification_permission_is_required))
-            .setPositiveButton(context.getString(R.string.ok)) { _, _ ->
-                onClickPositiveButton()
-            }
-            .setNegativeButton(context.getString(R.string.no), null)
-            .show()
-    }
-
     fun showNotificationPermissionRationale(
         context: Context,
         onClickPositiveButton: () -> Unit,
@@ -41,7 +24,7 @@ object DialogManager {
             context,
             com.google.android.material.R.style.MaterialAlertDialog_Material3
         )
-            .setTitle(context.getString(R.string.alert))
+            .setTitle(context.getString(R.string.notification_permission))
             .setMessage(context.getString(R.string.to_show_notification))
             .setPositiveButton(context.getString(R.string.ok)) { _, _ ->
                 if (Build.VERSION.SDK_INT >= 33) {

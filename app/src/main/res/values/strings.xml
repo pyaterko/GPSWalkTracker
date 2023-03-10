@@ -7,9 +7,9 @@
     <string name="title_settings">Settings</string>
 
     //Preference
-    <string name="update_time">Update time</string>
+    <string name="update_time">Mode</string>
     <string name="update_time_key">update_time_key</string>
-    <string name="update_time_summary">Location update time</string>
+    <string name="update_time_summary">Mode set</string>
     <string name="track_color">Track color</string>
     <string name="track_color_key">track_color_key</string>
     <string name="track_color_summary">Choose track color</string>
@@ -20,7 +20,7 @@
 
     //Dialogs
     <string name="location_ermission_eeded">Location Permission Needed</string>
-    <string name="this_app_needs_the_Location_permission">This app needs the Location permission, please accept to use location functionality</string>
+    <string name="this_app_needs_the_Location_permission">This app needs the Background Location Permission , please accept to use Background location functionality</string>
     <string name="ok">OK</string>
     <string name="no">NO</string>
     <string name="is_gps_enabled">Do you want gps enabled</string>

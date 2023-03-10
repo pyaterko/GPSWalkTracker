@@ -8,23 +8,18 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.location.LocationManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
-import com.example.gpswalktracker.MainActivity
 import com.example.gpswalktracker.R
 import com.example.gpswalktracker.data.InfoTrackItem
 import com.example.gpswalktracker.databinding.FragmentMapBinding
@@ -45,7 +40,6 @@ class MapFragment : Fragment() {
     private val binding get() = _binding!!
     private val mapViewModel: MapViewModel by viewModelCreator { MapViewModel(it.dataBase) }
 
-    private lateinit var pLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var mLocOverlay: MyLocationNewOverlay
     private var locationModel: LocationModel? = null
     private var timer: Timer? = null
@@ -54,6 +48,16 @@ class MapFragment : Fragment() {
     private var isServiceRunning = false
     private var firstStart = true
     private var startTime = 0L
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { isGranted ->
+            if (isGranted.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
+                initOSM()
+                checkEnabledGPS()
+                requestBackgroundLocationPermission()
+            }
+        }
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(contex: Context?, intent: Intent?) {
             if (intent?.action == LocationService.LOC_MODEL_INTENT) {
@@ -72,34 +76,13 @@ class MapFragment : Fragment() {
         }
     }
 
-
-    private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            hasNotificationPermissionGranted = isGranted
-            if (!isGranted) {
-                if (Build.VERSION.SDK_INT >= 33) {
-                    if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                        showNotificationPermissionRationale()
-                    } else {
-                        DialogManager.showSettingDialog(requireContext()) {
-                            val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS)
-                            intent.data = Uri.parse((activity as MainActivity).packageName)
-                            startActivity(intent)
-                        }
-                    }
-                }
-            }
-        }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
         settingsMap()
-        LocalBroadcastManager
-            .getInstance(activity as AppCompatActivity)
-            .registerReceiver(receiver, IntentFilter(LocationService.LOC_MODEL_INTENT))
+        registerBroadcastReceiver()
         mapViewModel.locationUpdates.observe(viewLifecycleOwner) {
             setData(it)
             updatePolyline(it.geoPointsList)
@@ -112,33 +95,14 @@ class MapFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         isServiceRunning = LocationService.isRunning
         if (isServiceRunning) {
-            binding.fatRun.setImageResource(android.R.drawable.ic_media_pause)
+            binding.fatRun.setImageResource(R.drawable.baseline_stop)
         }
-        registerPermissions()
-        checkLocationPermission()
+        requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
         binding.fatRun.setOnClickListener {
-            if (!isServiceRunning) {
-                startLocationService()
-                LocationService.startTime = System.currentTimeMillis()
-                startTimer()
-            } else {
-                stopLocationService()
-                timer?.cancel()
-                val trackItem = getInfoTrackItem()
-                DialogManager.showDialogForSavingTheTrack(
-                    requireContext(),
-                    trackItem
-                ) {
-                    mapViewModel.addInfoTrack(trackItem)
-                }
-            }
-//            if (hasNotificationPermissionGranted) {
-            isServiceRunning = !isServiceRunning
-//            }
+            toGeolocationManagement()
         }
         binding.fatLocation.setOnClickListener {
-            binding.map.controller.animateTo(mLocOverlay.myLocation)
-            mLocOverlay.enableFollowLocation()
+            toStartPosition()
         }
     }
 
@@ -160,9 +124,35 @@ class MapFragment : Fragment() {
         polyLine = null
     }
 
-    private fun showNotificationPermissionRationale() {
-        DialogManager.showNotificationPermissionRationale(requireContext()) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    private fun registerBroadcastReceiver() {
+        LocalBroadcastManager
+            .getInstance(activity as AppCompatActivity)
+            .registerReceiver(receiver, IntentFilter(LocationService.LOC_MODEL_INTENT))
+    }
+
+    private fun toStartPosition() {
+        binding.map.controller.animateTo(mLocOverlay.myLocation)
+        mLocOverlay.enableFollowLocation()
+    }
+
+    private fun toGeolocationManagement() {
+        if (!isServiceRunning) {
+            startLocationService()
+            LocationService.startTime = System.currentTimeMillis()
+            startTimer()
+        } else {
+            stopLocationService()
+            timer?.cancel()
+            val trackItem = getInfoTrackItem()
+            DialogManager.showDialogForSavingTheTrack(
+                requireContext(),
+                trackItem
+            ) {
+                mapViewModel.addInfoTrack(trackItem)
+            }
+        }
+        if (hasNotificationPermissionGranted) {
+            isServiceRunning = !isServiceRunning
         }
     }
 
@@ -247,19 +237,20 @@ class MapFragment : Fragment() {
         getString(R.string.time) + DateUtils.getTime(System.currentTimeMillis() - startTime)
 
     private fun stopLocationService() {
-        binding.fatRun.setImageResource(android.R.drawable.ic_media_play)
+        binding.fatRun.setImageResource(R.drawable.baseline_play)
         activity?.stopService(Intent(requireContext(), LocationService::class.java))
     }
 
     private fun startLocationService() {
         if (Build.VERSION.SDK_INT >= 33) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestNotificationPermission()
         } else {
             hasNotificationPermissionGranted = true
         }
         if (checkPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            hasNotificationPermissionGranted = true
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                binding.fatRun.setImageResource(android.R.drawable.ic_media_pause)
+                binding.fatRun.setImageResource(R.drawable.baseline_stop)
                 activity?.startForegroundService(
                     Intent(
                         requireContext(),
@@ -267,7 +258,7 @@ class MapFragment : Fragment() {
                     )
                 )
             } else {
-                binding.fatRun.setImageResource(android.R.drawable.ic_media_pause)
+                binding.fatRun.setImageResource(R.drawable.baseline_stop)
                 activity?.startService(
                     Intent(
                         requireContext(),
@@ -278,107 +269,24 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun checkLocationPermission() {
-        if (!checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    requireActivity(),
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            ) {
-                DialogManager.showDialogLocationPermission(requireContext()) {
-                    requestLocationPermission()
-                }
-            } else {
-                requestLocationPermission()
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private fun requestNotificationPermission() {
+        if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            DialogManager.showNotificationPermissionRationale(requireContext()) {
+                requestPermissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
             }
         } else {
-            checkBackgroundLocation()
+            requestPermissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
         }
-    }
-
-    private fun checkBackgroundLocation() {
-        if (!checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
-            requestBackgroundLocationPermission()
-        }
-    }
-
-    private fun requestLocationPermission() {
-        ActivityCompat.requestPermissions(
-            requireActivity(),
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            ),
-            MY_PERMISSIONS_REQUEST_LOCATION
-        )
     }
 
     private fun requestBackgroundLocationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                ),
-                MY_PERMISSIONS_REQUEST_BACKGROUND_LOCATION
-            )
-        } else {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                MY_PERMISSIONS_REQUEST_LOCATION
-            )
-        }
-    }
-
-    private fun registerPermissions() {
-        pLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) {
-            if (it.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
-                initOSM()
-                checkEnabledGPS()
-            } else {
-                checkLocationPermission()
+            if (!checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                DialogManager.showDialogLocationPermission(requireContext()) {
+                    requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+                }
             }
-        }
-        checkLocPermissionsBeforeInitMap()
-    }
-
-    private fun checkLocPermissionsBeforeInitMap() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            checkPermissionAfterQ()
-        } else {
-            checkPermissionBeforeQ()
-        }
-    }
-
-    private fun checkPermissionBeforeQ() {
-        if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            initOSM()
-            checkEnabledGPS()
-        } else {
-            pLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            )
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun checkPermissionAfterQ() {
-        if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
-            checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        ) {
-            initOSM()
-            checkEnabledGPS()
-        } else {
-            pLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                )
-            )
         }
     }
 
@@ -394,8 +302,7 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun initOSM(
-    ) = with(binding) {
+    private fun initOSM() = with(binding) {
         polyLine = Polyline()
         polyLine?.outlinePaint?.color = Color.parseColor(
             PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -435,8 +342,6 @@ class MapFragment : Fragment() {
     }
 
     companion object {
-        private const val MY_PERMISSIONS_REQUEST_LOCATION = 99
-        private const val MY_PERMISSIONS_REQUEST_BACKGROUND_LOCATION = 66
         private const val UNDEFINED_ID = 0
 
         @JvmStatic

@@ -8,9 +8,8 @@ import kotlinx.coroutines.launch
 
 class MapViewModel(dataBase: TracksDataBase) : ViewModel() {
 
-    val trackDao = dataBase.trackDao()
+    private val trackDao = dataBase.trackDao()
     val locationUpdates = MutableLiveData<LocationModel>()
-    val tracks = trackDao.getList().asLiveData()
     fun addInfoTrack(infoTrackItem: InfoTrackItem)=viewModelScope.launch {
         trackDao.addItem(infoTrackItem)
     }

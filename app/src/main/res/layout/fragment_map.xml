@@ -14,7 +14,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="parent" >
+        app:layout_constraintTop_toBottomOf="parent">
 
     </org.osmdroid.views.MapView>
 
@@ -42,7 +42,7 @@
         android:clickable="true"
         android:contentDescription="@string/appbar_scrolling_view_behavior"
         android:focusable="true"
-        android:src="@android:drawable/ic_media_play"
+        android:src="@drawable/baseline_play"
         app:backgroundTint="@color/design_default_color_on_primary"
         app:borderWidth="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -52,44 +52,48 @@
         android:id="@+id/tv_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:text="@string/tv_time"
+        android:layout_marginTop="16dp"
         android:textColor="@color/black"
+        android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="@string/tv_time" />
 
     <TextView
         android:id="@+id/tv_average_speed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:text="@string/tv_average_speed"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
         android:textColor="@color/black"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_time" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_time"
+        tools:text="@string/tv_average_speed" />
 
     <TextView
         android:id="@+id/tv_speed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:text="@string/tv_speed"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
         android:textColor="@color/black"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_average_speed" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_average_speed"
+        tools:text="@string/tv_speed" />
+
     <TextView
         android:id="@+id/tv_distance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:text="@string/tv_distanse"
-        android:textSize="20sp"
+        android:layout_marginTop="16dp"
         android:textColor="@color/black"
+        android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_speed" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_speed"
+        tools:text="@string/tv_distanse" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

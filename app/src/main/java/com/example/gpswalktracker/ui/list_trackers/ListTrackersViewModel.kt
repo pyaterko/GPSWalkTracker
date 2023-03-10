@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 
 class ListTrackersViewModel(dataBase: TracksDataBase) : ViewModel() {
 
-    val trackDao = dataBase.trackDao()
+    private val trackDao = dataBase.trackDao()
     val listData = trackDao.getList().asLiveData()
     fun deleteInfoTrack(infoTrackItem: InfoTrackItem) = viewModelScope.launch {
         trackDao.deleteItem(infoTrackItem.id)

@@ -25,7 +25,7 @@ class LocationService : Service() {
     private var lastLocation: Location? = null
     val geoPointList = arrayListOf<GeoPoint>()
     private var distance = 0.0f
-
+    private val isDebug = true // when checking on the emulator, set true
 
     private val locationRequest: LocationRequest =
         LocationRequest.Builder(
@@ -42,7 +42,7 @@ class LocationService : Service() {
             super.onLocationResult(locationResult)
             val currentLocation = locationResult.lastLocation
             if (lastLocation != null && currentLocation != null) {
-                if (currentLocation.speed > 0.3) {
+                if (currentLocation.speed > 0.2 ||isDebug) {
                     distance += lastLocation?.distanceTo(currentLocation)!!
                     geoPointList.add(GeoPoint(currentLocation.latitude, currentLocation.longitude))
                 }

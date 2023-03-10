@@ -1,6 +1,5 @@
 package com.example.gpswalktracker.data
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -21,7 +20,7 @@ interface TrackDao {
     suspend fun deleteItem(itemId: Int)
 
     @Query("SELECT * FROM info_track_table WHERE id=:itemId LIMIT 1")
-    suspend fun getItemById(itemId: Int):InfoTrackItem
+    suspend fun getItemById(itemId: Int): InfoTrackItem
 
     @Query("DELETE FROM info_track_table")
     suspend fun deleteAll()
